@@ -10,7 +10,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-type", "text/plain")
             self.end_headers()
-            self.wfile.write(b"OK")
+            self.wfile.write(b"ALL GOOD")
 
 server = HTTPServer(("0.0.0.0", 3000), Handler)
 print("Server starting on port 3000")
