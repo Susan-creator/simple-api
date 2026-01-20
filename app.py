@@ -1,4 +1,5 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
+this_will_crash
 import datetime
 
 class Handler(BaseHTTPRequestHandler):
