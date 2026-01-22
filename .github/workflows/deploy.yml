@@ -18,11 +18,11 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H 44.200.207.179 >> ~/.ssh/known_hosts
+          ssh-keyscan -H 13.218.111.193 >> ~/.ssh/known_hosts
 
       - name: Deploy
         run: |
-          ssh ubuntu@44.200.207.179 << 'EOF'
+          ssh ubuntu@13.218.111.193 << 'EOF'
             set -e
             cd /home/ubuntu/simple-api
             git pull
