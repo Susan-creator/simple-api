@@ -53,3 +53,29 @@ jobs:
               --restart unless-stopped \
               ${{ secrets.DOCKER_USERNAME }}/simple-api:${{ needs.build.outputs.image_tag }}
           EOF
+  deploy-production:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.EC2_PUBLIC_IP }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to Production
+        run: |
+          ssh ubuntu@${{ secrets.EC2_PUBLIC_IP }} << EOF
+            docker pull ${{ secrets.DOCKER_USERNAME }}/simple-api:${{ needs.build.outputs.image_tag }}
+            docker stop simple-api || true
+            docker rm simple-api || true
+            docker run -d \
+              --name simple-api \
+              -p 3000:3000 \
+              --restart unless-stopped \
+              ${{ secrets.DOCKER_USERNAME }}/simple-api:${{ needs.build.outputs.image_tag }}
+          EOF
