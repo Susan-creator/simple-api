@@ -26,6 +26,8 @@ jobs:
         run: |
           IMAGE_TAG=${GITHUB_SHA::7}
           echo "Using image tag: $IMAGE_TAG"
+          echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}"
+          echo "IMAGE_TAG=$IMAGE_TAG"
 
           docker build -t ${{ secrets.DOCKER_USERNAME }}/simple-api:$IMAGE_TAG .
           docker push ${{ secrets.DOCKER_USERNAME }}/simple-api:$IMAGE_TAG
@@ -42,13 +44,15 @@ jobs:
       - name: Deploy on EC2
         run: |
           IMAGE_TAG=${GITHUB_SHA::7}
+          IMAGE_NAME=${{ secrets.DOCKER_USERNAME }}/simple-api:$IMAGE_TAG
 
           ssh ubuntu@${{ secrets.EC2_PUBLIC_IP }} << EOF
             set -e
 
+            echo "INSIDE SERVER"
             echo "Deploying image tag: $IMAGE_TAG"
 
-            docker pull ${{ secrets.DOCKER_USERNAME }}/simple-api:$IMAGE_TAG
+            docker pull $IMAGE_NAME
 
             docker stop simple-api || true
             docker rm simple-api || true
@@ -57,5 +61,5 @@ jobs:
               --name simple-api \
               -p 3000:3000 \
               --restart unless-stopped \
-              ${{ secrets.DOCKER_USERNAME }}/simple-api:$IMAGE_TAG
+              $IMAGE_NAME
           EOF
