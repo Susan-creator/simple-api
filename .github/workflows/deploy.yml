@@ -1,4 +1,4 @@
-name: Build & Deploy Docker Image
+name: Build & Deploy
 
 on:
   push:
@@ -6,33 +6,33 @@ on:
       - main
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.build.outputs.image_tag }}
 
     steps:
-      # Checkout source code
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # Log in to Docker Hub
-      - name: Log in to Docker Hub
+      - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Build & push Docker image using Git commit SHA
-      - name: Build and push Docker image
+      - name: Build & Push Image
+        id: build
         run: |
-          IMAGE_TAG=${GITHUB_SHA::7}
-          echo "Using image tag: $IMAGE_TAG"
-          echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}"
-          echo "IMAGE_TAG=$IMAGE_TAG"
+          TAG=${GITHUB_SHA::7}
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/simple-api:$TAG .
+          docker push ${{ secrets.DOCKER_USERNAME }}/simple-api:$TAG
+          echo "image_tag=$TAG" >> $GITHUB_OUTPUT
 
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/simple-api:$IMAGE_TAG .
-          docker push ${{ secrets.DOCKER_USERNAME }}/simple-api:$IMAGE_TAG
+  deploy-staging:
+    needs: build
+    runs-on: ubuntu-latest
 
-      # Setup SSH to EC2
+    steps:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -40,25 +40,16 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H ${{ secrets.EC2_PUBLIC_IP }} >> ~/.ssh/known_hosts
 
-      # Deploy on EC2 using the SAME commit SHA
-      - name: Deploy on EC2
+      - name: Deploy to Staging
         run: |
-          IMAGE_TAG=${GITHUB_SHA::7}
-          IMAGE_NAME=${{ secrets.DOCKER_USERNAME }}/simple-api:$IMAGE_TAG
-
           ssh ubuntu@${{ secrets.EC2_PUBLIC_IP }} << EOF
             set -e
-
-            echo "Deploying image tag: $IMAGE_TAG"
-
-            docker pull $IMAGE_NAME
-
-            docker stop simple-api || true
-            docker rm simple-api || true
-
+            docker pull ${{ secrets.DOCKER_USERNAME }}/simple-api:${{ needs.build.outputs.image_tag }}
+            docker stop simple-api-staging || true
+            docker rm simple-api-staging || true
             docker run -d \
-              --name simple-api-prod \
-              -p 3000:3000 \
+              --name simple-api-staging \
+              -p 3001:3000 \
               --restart unless-stopped \
-              $IMAGE_NAME
+              ${{ secrets.DOCKER_USERNAME }}/simple-api:${{ needs.build.outputs.image_tag }}
           EOF
