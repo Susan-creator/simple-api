@@ -74,7 +74,7 @@ jobs:
             docker stop simple-api || true
             docker rm simple-api || true
             docker run -d \
-              --name simple-api \
+              --name simple-api-prod \
               -p 3000:3000 \
               --restart unless-stopped \
               ${{ secrets.DOCKER_USERNAME }}/simple-api:${{ needs.build.outputs.image_tag }}
