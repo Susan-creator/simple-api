@@ -71,7 +71,7 @@ jobs:
         run: |
           ssh ubuntu@${{ secrets.EC2_PUBLIC_IP }} << EOF
             docker pull ${{ secrets.DOCKER_USERNAME }}/simple-api:${{ needs.build.outputs.image_tag }}
-            docker stop simple-api || true
+            docker stop simple-api-prod || true
             docker rm simple-api || true
             docker run -d \
               --name simple-api-prod \
