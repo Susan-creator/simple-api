@@ -28,7 +28,7 @@ class Handler(BaseHTTPRequestHandler):
             time.sleep(0.05)
             self.send_response(200)
             self.end_headers()
-            self.wfile.write(b"Good")
+            self.wfile.write(b"Ok")
 
         elif self.path == "/metrics":
             self.send_response(200)
